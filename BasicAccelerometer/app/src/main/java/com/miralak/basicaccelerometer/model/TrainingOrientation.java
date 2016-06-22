@@ -1,11 +1,10 @@
 package com.miralak.basicaccelerometer.model;
 
-
-public class TrainingAcceleration {
+public class TrainingOrientation {
     private String userID;
     private String activity;
     private long starttime;
-    private Acceleration acceleration;
+    private Orientation orientation;
 
 
     public void setStarttime(long starttime) {
@@ -20,8 +19,8 @@ public class TrainingAcceleration {
         this.activity = activity;
     }
 
-    public void setAcceleration(Acceleration acceleration) {
-        this.acceleration = acceleration;
+    public void setOrientation(Orientation orientation) {
+        this.orientation = orientation;
     }
 
     @Override
@@ -30,7 +29,7 @@ public class TrainingAcceleration {
                 "userID='" + userID + '\'' +
                 ", starttime='" + starttime + '\'' +
                 ", activity='" + activity + '\'' +
-                ", acceleration=" + acceleration +
+                ", orientation=" + orientation +
                 '}';
     }
 }

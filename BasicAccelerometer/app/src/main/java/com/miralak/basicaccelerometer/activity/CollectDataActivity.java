@@ -22,9 +22,7 @@ import android.widget.TextView;
 
 import com.miralak.basicaccelerometer.R;
 import com.miralak.basicaccelerometer.api.CassandraRestApi;
-import com.miralak.basicaccelerometer.model.Acceleration;
-import com.miralak.basicaccelerometer.model.ActivityType;
-import com.miralak.basicaccelerometer.model.TrainingAcceleration;
+import com.miralak.basicaccelerometer.model.*;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -34,7 +32,7 @@ import java.util.TimerTask;
 
 import retrofit.RestAdapter;
 
-public class CollectDataActivity extends ActionBarActivity implements SensorEventListener{
+public class CollectDataActivity extends ActionBarActivity {
 
     private String restURL;
     private String userID;
@@ -53,6 +51,51 @@ public class CollectDataActivity extends ActionBarActivity implements SensorEven
 
     private SensorManager sm;
     private Sensor accelerometer;
+    private Sensor gyrocope;
+
+    private long startTime;
+
+    private final SensorEventListener accelerometerListener = new SensorEventListener() {
+        @Override
+        public void onSensorChanged(final SensorEvent sensorEvent) {
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+                final Acceleration acceleration = getAccelerationFromSensor(sensorEvent);
+                updateTextView(acceleration);
+                new SendAccelerationAsyncTask().execute(acceleration);
+
+//                new Thread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        api.sendAccelerationValues(acceleration);
+//                    }
+//                }).run();
+            }
+        }
+
+        @Override
+        public void onAccuracyChanged(final Sensor sensor, final int i) {
+        }
+    };
+
+    private final SensorEventListener gyroListener = new SensorEventListener() {
+        @Override
+        public void onSensorChanged(final SensorEvent sensorEvent) {
+            if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+                final Orientation orientation = getOrientationFromSensor(sensorEvent);
+                new SendOrientationAsyncTask().execute(orientation);
+//                new Thread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        api.sendAccelerationValues(gyro);
+//                    }
+//                }).run();
+            }
+        }
+
+        @Override
+        public void onAccuracyChanged(final Sensor sensor, final int i) {
+        }
+    };
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,6 +106,7 @@ public class CollectDataActivity extends ActionBarActivity implements SensorEven
         //Init accelerometer sensor
         sm = (SensorManager) getSystemService(SENSOR_SERVICE);
         accelerometer = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        gyrocope = sm.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
 
         initActivitySpinner();
         initRestApi();
@@ -111,18 +155,6 @@ public class CollectDataActivity extends ActionBarActivity implements SensorEven
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        Acceleration capturedAcceleration = getAccelerationFromSensor(event);
-        updateTextView(capturedAcceleration);
-        new SendAccelerationAsyncTask().execute(capturedAcceleration);
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        //Do nothing
-    }
-
     private void initActionButtons() {
         myStartButton = (Button) findViewById(R.id.button_start_training);
         myStopButton = (Button) findViewById(R.id.button_stop_training);
@@ -135,6 +167,7 @@ public class CollectDataActivity extends ActionBarActivity implements SensorEven
             public void onClick(View v) {
                 userID = ((EditText) findViewById(R.id.userID)).getText().toString();
                 selectedActivity = (String) activitySpinner.getSelectedItem();
+                startTime = new Date().getTime();
 
                 myStartButton.setVisibility(View.GONE);
                 myStopButton.setVisibility(View.VISIBLE);
@@ -180,12 +213,17 @@ public class CollectDataActivity extends ActionBarActivity implements SensorEven
         stopTimerTask = new TimerTask() {
             @Override
             public void run() {
-                toneG.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD);
-                startTimerTask.cancel();
-                stopSensor();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        toneG.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD);
+                        startTimerTask.cancel();
+                        stopSensor();
 
-                myStartButton.setVisibility(View.VISIBLE);
-                myStopButton.setVisibility(View.GONE);
+                        myStartButton.setVisibility(View.VISIBLE);
+                        myStopButton.setVisibility(View.GONE);
+                    }
+                });
             }
         };
     }
@@ -235,24 +273,36 @@ public class CollectDataActivity extends ActionBarActivity implements SensorEven
     }
 
     private void startSensor() {
-        sm.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sm.registerListener(accelerometerListener, accelerometer, SensorManager.SENSOR_DELAY_FASTEST);
+        sm.registerListener(gyroListener, gyrocope, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     private void stopSensor() {
-        sm.unregisterListener(this);
+        sm.unregisterListener(accelerometerListener);
+        sm.unregisterListener(gyroListener);
     }
 
 
-    private void updateTextView(Acceleration capturedAcceleration) {
-        acceleration.setText("X:" + capturedAcceleration.getX() +
-                "\nY:" + capturedAcceleration.getY() +
-                "\nZ:" + capturedAcceleration.getZ() +
-                "\nTimestamp:" + capturedAcceleration.getTimestamp());
+    private void updateTextView(final Acceleration capturedAcceleration) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                acceleration.setText("X:" + capturedAcceleration.getX() +
+                        "\nY:" + capturedAcceleration.getY() +
+                        "\nZ:" + capturedAcceleration.getZ() +
+                        "\nTimestamp:" + capturedAcceleration.getTimestamp());
+            }
+        });
     }
 
     private Acceleration getAccelerationFromSensor(SensorEvent event) {
         long timestamp = (new Date()).getTime() + (event.timestamp - System.nanoTime()) / 1000000L;
         return new Acceleration(event.values[0], event.values[1], event.values[2], timestamp);
+    }
+
+    private Orientation getOrientationFromSensor(SensorEvent event) {
+        long timestamp = (new Date()).getTime() + (event.timestamp - System.nanoTime()) / 1000000L;
+        return new Orientation(event.values[0], event.values[1], event.values[2], timestamp);
     }
 
     /**
@@ -267,12 +317,32 @@ public class CollectDataActivity extends ActionBarActivity implements SensorEven
                 training.setAcceleration(params[0]);
                 training.setUserID(userID);
                 training.setActivity(selectedActivity);
+                training.setStarttime(startTime);
 
                 cassandraRestApi.sendTrainingAccelerationValues(training);
 
             } catch(Exception e) {
 
-                e.printStackTrace();
+            }
+            return null;
+        }
+    }
+
+    private class SendOrientationAsyncTask extends AsyncTask<Orientation, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Orientation... params) {
+            try {
+                TrainingOrientation training = new TrainingOrientation();
+                training.setOrientation(params[0]);
+                training.setUserID(userID);
+                training.setActivity(selectedActivity);
+                training.setStarttime(startTime);
+
+                cassandraRestApi.sendTrainingOrientationValues(training);
+
+            } catch(Exception e) {
+
             }
             return null;
         }

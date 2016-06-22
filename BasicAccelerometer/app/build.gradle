@@ -4,6 +4,7 @@ android {
     compileSdkVersion 21
     buildToolsVersion "21.1.2"
 
+
     defaultConfig {
         applicationId "com.miralak.basicaccelerometer"
         minSdkVersion 15
@@ -11,6 +12,7 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -21,6 +23,6 @@ android {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:22.0.0'
+    compile 'com.android.support:appcompat-v7:21.0.0'
     compile 'com.squareup.retrofit:retrofit:1.7.1'
 }

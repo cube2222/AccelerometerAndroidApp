@@ -21,7 +21,7 @@ import java.util.Date;
 
 import retrofit.RestAdapter;
 
-public class AccelerometerActivity extends ActionBarActivity implements SensorEventListener{
+public class AccelerometerActivity extends ActionBarActivity implements SensorEventListener {
 
     private String restURL;
     private TextView acceleration;
