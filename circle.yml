@@ -1,2 +1,4 @@
 general:
   build_dir: BasicAccelerometer
+  artifacts:
+    - "app/build"
