@@ -14,12 +14,12 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.miralak.basicaccelerometer.R;
-import com.miralak.basicaccelerometer.api.CassandraRestApi;
+import com.miralak.basicaccelerometer.api.RestApi;
 import com.miralak.basicaccelerometer.model.Acceleration;
 
 import java.util.Date;
 
-import retrofit.RestAdapter;
+import retrofit2.Retrofit;
 
 public class AccelerometerActivity extends ActionBarActivity implements SensorEventListener {
 
@@ -28,7 +28,7 @@ public class AccelerometerActivity extends ActionBarActivity implements SensorEv
     private Button myStartButton;
     private Button myStopButton;
 
-    private CassandraRestApi cassandraRestApi;
+    private RestApi restApi;
 
     private SensorManager sm;
     private Sensor accelerometer;
@@ -96,11 +96,11 @@ public class AccelerometerActivity extends ActionBarActivity implements SensorEv
             restURL = extras.getString(StartActivity.URL);
         }
 
-        RestAdapter restAdapter = new RestAdapter.Builder()
-                .setEndpoint(restURL)
+        Retrofit restAdapter = new Retrofit.Builder()
+                .baseUrl(restURL)
                 .build();
 
-        cassandraRestApi = restAdapter.create(CassandraRestApi.class);
+        restApi = restAdapter.create(RestApi.class);
     }
 
     /**
@@ -173,7 +173,7 @@ public class AccelerometerActivity extends ActionBarActivity implements SensorEv
         @Override
         protected Void doInBackground(Acceleration... params) {
             try {
-                cassandraRestApi.sendAccelerationValues(params[0]);
+                restApi.sendAccelerationValues(params[0]);
             } catch(Exception e) {
                 e.printStackTrace();
             }
