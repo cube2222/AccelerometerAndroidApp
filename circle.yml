@@ -1,4 +1,6 @@
 general:
   build_dir: BasicAccelerometer
-  artifacts:
-    - "build"
+test:
+    override:
+        - ./gradlew assembleRelease
+        - cp -r BasicAccelerometer/build/outputs $CIRCLE_ARTIFACTS
