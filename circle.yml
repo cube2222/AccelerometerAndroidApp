@@ -3,4 +3,4 @@ general:
 test:
     override:
         - ./gradlew assembleRelease
-        - cp -r BasicAccelerometer/app/build/outputs $CIRCLE_ARTIFACTS
+        - cp -r ~/AccelerometerAndroidApp/BasicAccelerometer/app/build/outputs $CIRCLE_ARTIFACTS
